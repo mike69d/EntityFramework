@@ -650,9 +650,22 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
         {
             var skipResultOperator = (SkipResultOperator)handlerContext.ResultOperator;
 
-            handlerContext.SelectExpression.Offset = skipResultOperator.Count;
+            var sqlTranslatingExpressionVisitor
+                = handlerContext.SqlTranslatingExpressionVisitorFactory
+                    .Create(
+                        handlerContext.QueryModelVisitor,
+                        handlerContext.SelectExpression,
+                        bindParentQueries: true);
 
-            return handlerContext.EvalOnServer;
+            var offset = sqlTranslatingExpressionVisitor.Visit(skipResultOperator.Count);
+            if (offset != null)
+            {
+                handlerContext.SelectExpression.Offset = offset;
+
+                return handlerContext.EvalOnServer;
+            }
+
+            return handlerContext.EvalOnClient();
         }
 
         private static Expression HandleSum(HandlerContext handlerContext)
@@ -676,9 +689,22 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
         {
             var takeResultOperator = (TakeResultOperator)handlerContext.ResultOperator;
 
-            handlerContext.SelectExpression.Limit = takeResultOperator.Count;
+            var sqlTranslatingExpressionVisitor
+                = handlerContext.SqlTranslatingExpressionVisitorFactory
+                    .Create(
+                        handlerContext.QueryModelVisitor,
+                        handlerContext.SelectExpression,
+                        bindParentQueries: true);
 
-            return handlerContext.EvalOnServer;
+            var limit = sqlTranslatingExpressionVisitor.Visit(takeResultOperator.Count);
+            if (limit != null)
+            {
+                handlerContext.SelectExpression.Limit = takeResultOperator.Count;
+
+                return handlerContext.EvalOnServer;
+            }
+
+            return handlerContext.EvalOnClient();
         }
 
         private static void SetProjectionConditionalExpression(
